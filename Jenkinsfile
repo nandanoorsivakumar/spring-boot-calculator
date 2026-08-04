@@ -67,6 +67,61 @@ pipeline {
                 )
             }
         }
+
+        stage('Stop Existing Application') {
+            steps {
+                bat '''
+                    echo Checking whether port 9191 is in use...
+
+                    for /f "tokens=5" %%a in ('netstat -ano ^| findstr :9191 ^| findstr LISTENING') do (
+                        echo Stopping process %%a
+                        taskkill /PID %%a /F
+                    )
+
+                    exit /b 0
+                '''
+            }
+        }
+
+        stage('Deploy Locally') {
+            steps {
+                bat '''
+                    echo Copying JAR to deployment folder...
+
+                    if not exist "C:\\jenkins-deploy\\calculator" (
+                        mkdir "C:\\jenkins-deploy\\calculator"
+                    )
+
+                    copy /Y "target\\calculator-0.0.1-SNAPSHOT.jar" ^
+                            "C:\\jenkins-deploy\\calculator\\calculator.jar"
+
+                    echo Starting Spring Boot application on port 9191...
+
+                    start "calculator-app" /B java -jar ^
+                      "C:\\jenkins-deploy\\calculator\\calculator.jar" ^
+                      --server.port=9191 ^
+                      > "C:\\jenkins-deploy\\calculator\\application.log" 2>&1
+                '''
+            }
+        }
+
+        stage('Verify Deployment') {
+            steps {
+                bat '''
+                    timeout /t 10 /nobreak
+
+                    curl --fail ^
+                      "http://localhost:9191/api/calculator/add?a=10&b=20"
+
+                    if errorlevel 1 (
+                        echo Deployment verification failed
+                        exit /b 1
+                    )
+
+                    echo Application deployed successfully
+                '''
+            }
+        }
     }
 
     post {
