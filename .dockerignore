@@ -1,0 +1,9 @@
+.git
+.gitignore
+.idea
+.settings
+.project
+.classpath
+README.md
+*.log
+target/*.jar.original
