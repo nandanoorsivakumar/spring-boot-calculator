@@ -1,6 +1,8 @@
 package com.example.calculator.controller;
 
 import com.example.calculator.service.CalculatorService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -12,6 +14,9 @@ import java.util.Map;
 @RequestMapping("/api/calculator")
 public class CalculatorController {
 
+    private static final Logger log =
+            LoggerFactory.getLogger(CalculatorController.class);
+
     private final CalculatorService calculatorService;
 
     public CalculatorController(CalculatorService calculatorService) {
@@ -21,6 +26,12 @@ public class CalculatorController {
     @GetMapping("/add")
     public Map<String, Object> add(@RequestParam double a, @RequestParam double b) {
         return response(a, b, "ADD", calculatorService.add(a, b));
+    }
+
+    @GetMapping("/message")
+    public String msg() {
+        log.info("Message API Executed");
+        return "Calculator ,Programme Welcome to, Govindaian , Sreedevin , Prasad Sivakumar vls";
     }
 
     @GetMapping("/subtract")
