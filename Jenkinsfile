@@ -12,6 +12,7 @@ pipeline {
     }
 
     stages {
+
         stage('Checkout') {
             steps {
                 git branch: 'main',
@@ -24,6 +25,13 @@ pipeline {
                 bat 'java -version'
                 bat 'mvn -version'
                 bat 'git --version'
+            }
+        }
+
+        stage('Docker Check') {
+            steps {
+                bat 'docker --version'
+                bat 'docker ps'
             }
         }
 
@@ -53,13 +61,13 @@ pipeline {
                         exit /b 1
                     )
 
-                    echo JAR file created successfully:
+                    echo JAR file created successfully
                     dir target\\*.jar
                 '''
             }
         }
 
-        stage('Archive') {
+        stage('Archive JAR') {
             steps {
                 archiveArtifacts(
                     artifacts: 'target/*.jar',
@@ -67,71 +75,18 @@ pipeline {
                 )
             }
         }
-
-        stage('Stop Existing Application') {
-            steps {
-                bat '''
-                    echo Checking whether port 9191 is in use...
-
-                    for /f "tokens=5" %%a in ('netstat -ano ^| findstr :9191 ^| findstr LISTENING') do (
-                        echo Stopping process %%a
-                        taskkill /PID %%a /F
-                    )
-
-                    exit /b 0
-                '''
-            }
-        }
-
-        stage('Deploy Locally') {
-            steps {
-                bat '''
-                    echo Copying JAR to deployment folder...
-
-                    if not exist "C:\\jenkins-deploy\\calculator" (
-                        mkdir "C:\\jenkins-deploy\\calculator"
-                    )
-
-                    copy /Y "target\\calculator-0.0.1-SNAPSHOT.jar" ^
-                            "C:\\jenkins-deploy\\calculator\\calculator.jar"
-
-                    echo Starting Spring Boot application on port 9191...
-
-                    start "calculator-app" /B java -jar ^
-                      "C:\\jenkins-deploy\\calculator\\calculator.jar" ^
-                      --server.port=9191 ^
-                      > "C:\\jenkins-deploy\\calculator\\application.log" 2>&1
-                '''
-            }
-        }
-
-        stage('Verify Deployment') {
-            steps {
-                bat '''
-                    timeout /t 10 /nobreak
-
-                    curl --fail ^
-                      "http://localhost:9191/api/calculator/add?a=10&b=20"
-
-                    if errorlevel 1 (
-                        echo Deployment verification failed
-                        exit /b 1
-                    )
-
-                    echo Application deployed successfully
-                '''
-            }
-        }
     }
 
     post {
+
         success {
-            echo 'CI pipeline completed successfully.'
-            echo 'The Spring Boot JAR was built and archived.'
+            echo 'Jenkins pipeline completed successfully.'
+            echo 'Java, Maven, Git and Docker are available.'
+            echo 'Spring Boot application was built successfully.'
         }
 
         failure {
-            echo 'Pipeline failed. Check the Jenkins Console Output.'
+            echo 'Pipeline failed. Check Jenkins Console Output.'
         }
 
         always {
