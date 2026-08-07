@@ -14,7 +14,7 @@ import java.util.Map;
 @RequestMapping("/api/calculator")
 public class CalculatorController {
 
-    private static final Logger log =
+    privat static final Logger log =
             LoggerFactory.getLogger(CalculatorController.class);
 
     private final CalculatorService calculatorService;
