@@ -8,6 +8,9 @@ pipeline {
 
     environment {
         APP_NAME = 'calculator'
+        IMAGE_NAME = 'spring-boot-calculator'
+        IMAGE_TAG = '1.0'
+        CONTAINER_NAME = 'calculator-container'
         JAR_FILE = 'target/calculator-0.0.1-SNAPSHOT.jar'
     }
 
@@ -25,13 +28,7 @@ pipeline {
                 bat 'java -version'
                 bat 'mvn -version'
                 bat 'git --version'
-            }
-        }
-
-        stage('Docker Check') {
-            steps {
                 bat 'docker --version'
-                bat 'docker ps'
             }
         }
 
@@ -61,7 +58,7 @@ pipeline {
                         exit /b 1
                     )
 
-                    echo JAR file created successfully
+                    echo JAR created successfully
                     dir target\\*.jar
                 '''
             }
@@ -75,18 +72,73 @@ pipeline {
                 )
             }
         }
+
+        stage('Docker Build') {
+            steps {
+                bat '''
+                    echo Building Docker image...
+                    docker build -t %IMAGE_NAME%:%IMAGE_TAG% .
+                '''
+            }
+        }
+
+        stage('Stop Old Container') {
+            steps {
+                bat '''
+                    docker stop %CONTAINER_NAME% 2>nul || exit /b 0
+                '''
+            }
+        }
+
+        stage('Remove Old Container') {
+            steps {
+                bat '''
+                    docker rm %CONTAINER_NAME% 2>nul || exit /b 0
+                '''
+            }
+        }
+
+        stage('Run Docker Container') {
+            steps {
+                bat '''
+                    docker run -d ^
+                      --name %CONTAINER_NAME% ^
+                      -p 9191:8080 ^
+                      %IMAGE_NAME%:%IMAGE_TAG%
+                '''
+            }
+        }
+
+        stage('Verify Docker Deployment') {
+            steps {
+                bat '''
+                    echo Waiting for application to start...
+
+                    ping 127.0.0.1 -n 11 > nul
+
+                    curl --fail "http://localhost:9191/api/calculator/add?a=10&b=20"
+
+                    if errorlevel 1 (
+                        echo Docker deployment verification failed
+                        docker logs %CONTAINER_NAME%
+                        exit /b 1
+                    )
+
+                    echo Docker deployment successful
+                '''
+            }
+        }
     }
 
     post {
 
         success {
-            echo 'Jenkins pipeline completed successfully.'
-            echo 'Java, Maven, Git and Docker are available.'
-            echo 'Spring Boot application was built successfully.'
+            echo 'CI/CD pipeline completed successfully.'
+            echo 'Spring Boot application deployed using Docker.'
         }
 
         failure {
-            echo 'Pipeline failed. Check Jenkins Console Output.'
+            echo 'Pipeline failed. Check Console Output.'
         }
 
         always {
