@@ -31,7 +31,7 @@ public class CalculatorController {
     @GetMapping("/message")
     public String msg() {
         log.info("Message API Executed");
-        return "Version 2 deployed from Jenkins Docker Pipeline";
+        return "Version 3 deployed from Jenkins Docker Pipeline";
     }
 
     @GetMapping("/subtract")
