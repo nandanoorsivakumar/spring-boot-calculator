@@ -32,6 +32,8 @@ public class CalculatorController {
     public String msg() {
         log.info("Version 3.16 Message API Executed");
         return "Version 3.16 deployed from Jenkins Docker Pipeline";
+
+        //upto 3.16 we have Learned about Docker and with help do docker image we have Deployed into the Kubernet Now moving go Jenkine
     }
 
     @GetMapping("/subtract")
