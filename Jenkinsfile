@@ -33,6 +33,8 @@ pipeline {
                 bat 'git --version'
                 bat 'docker --version'
                 bat 'kubectl version --client'
+                bat 'kubectl config current-context'
+                bat 'kubectl get nodes'
             }
         }
 
