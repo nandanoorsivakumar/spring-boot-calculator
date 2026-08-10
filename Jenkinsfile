@@ -1,4 +1,5 @@
 pipeline {
+
     agent any
 
     tools {
@@ -9,9 +10,11 @@ pipeline {
     environment {
         APP_NAME = 'calculator'
         IMAGE_NAME = 'spring-boot-calculator'
-        IMAGE_TAG = '1.0'
-        CONTAINER_NAME = 'calculator-container'
+        IMAGE_TAG = "${BUILD_NUMBER}"
         JAR_FILE = 'target/calculator-0.0.1-SNAPSHOT.jar'
+
+        DEPLOYMENT_NAME = 'calculator-deployment'
+        CONTAINER_NAME = 'calculator-container'
     }
 
     stages {
@@ -29,6 +32,7 @@ pipeline {
                 bat 'mvn -version'
                 bat 'git --version'
                 bat 'docker --version'
+                bat 'kubectl version --client'
             }
         }
 
@@ -82,49 +86,46 @@ pipeline {
             }
         }
 
-        stage('Stop Old Container') {
+        stage('Verify Kubernetes') {
             steps {
                 bat '''
-                    docker stop %CONTAINER_NAME% 2>nul || exit /b 0
+                    kubectl config current-context
+                    kubectl get nodes
+                    kubectl get deployment %DEPLOYMENT_NAME%
                 '''
             }
         }
 
-        stage('Remove Old Container') {
+        stage('Deploy to Kubernetes') {
             steps {
                 bat '''
-                    docker rm %CONTAINER_NAME% 2>nul || exit /b 0
+                    echo Deploying image %IMAGE_NAME%:%IMAGE_TAG%
+
+                    kubectl set image deployment/%DEPLOYMENT_NAME% ^
+                    %CONTAINER_NAME%=%IMAGE_NAME%:%IMAGE_TAG%
                 '''
             }
         }
 
-        stage('Run Docker Container') {
+        stage('Wait for Kubernetes Rollout') {
             steps {
                 bat '''
-                    docker run -d ^
-                      --name %CONTAINER_NAME% ^
-                      -p 9191:8080 ^
-                      %IMAGE_NAME%:%IMAGE_TAG%
+                    kubectl rollout status deployment/%DEPLOYMENT_NAME% --timeout=120s
                 '''
             }
         }
 
-        stage('Verify Docker Deployment') {
+        stage('Verify Kubernetes Deployment') {
             steps {
                 bat '''
-                    echo Waiting for application to start...
+                    echo Current Kubernetes image:
 
-                    ping 127.0.0.1 -n 11 > nul
+                    kubectl get deployment %DEPLOYMENT_NAME% ^
+                    -o=jsonpath="{.spec.template.spec.containers[0].image}"
 
-                    curl --fail "http://localhost:9191/api/calculator/add?a=10&b=20"
-
-                    if errorlevel 1 (
-                        echo Docker deployment verification failed
-                        docker logs %CONTAINER_NAME%
-                        exit /b 1
-                    )
-
-                    echo Docker deployment successful
+                    echo.
+                    echo Kubernetes Pods:
+                    kubectl get pods -l app=calculator -o wide
                 '''
             }
         }
@@ -134,11 +135,22 @@ pipeline {
 
         success {
             echo 'CI/CD pipeline completed successfully.'
-            echo 'Spring Boot application deployed using Docker.'
+            echo 'Spring Boot application deployed to Kubernetes.'
         }
 
         failure {
             echo 'Pipeline failed. Check Console Output.'
+
+            bat '''
+                echo Kubernetes deployment status:
+                kubectl get deployment %DEPLOYMENT_NAME%
+
+                echo Pods:
+                kubectl get pods -l app=calculator
+
+                echo Recent Kubernetes events:
+                kubectl get events --sort-by=.metadata.creationTimestamp
+            '''
         }
 
         always {

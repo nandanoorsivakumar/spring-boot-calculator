@@ -30,11 +30,9 @@ public class CalculatorController {
 
     @GetMapping("/message")
     public String msg() {
-        log.info("Version 3.16 Message API Executed");
-        return "Version 3.16 deployed from Jenkins Docker Pipeline";
-
-        //upto 3.16 we have Learned about Docker and with help do docker image we have Deployed into the Kubernet Now moving go Jenkine
-    }
+        log.info("Version 17 Message API Executed");
+        return "Version 17 deployed from Jenkins Docker Pipeline";
+         }
 
     @GetMapping("/subtract")
     public Map<String, Object> subtract(@RequestParam double a, @RequestParam double b) {
