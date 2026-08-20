@@ -5,7 +5,7 @@ metadata:
   name: calculator-deployment
 
 spec:
-  replicas: 4
+  replicas: 10
 
   selector:
     matchLabels:
@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: calculator-container
-          image: spring-boot-calculator:1.0
+          image: spring-boot-calculator:12.4
           imagePullPolicy: IfNotPresent
 
           ports:
