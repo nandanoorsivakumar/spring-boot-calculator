@@ -30,8 +30,8 @@ public class CalculatorController {
 
     @GetMapping("/message")
     public String msg() {
-        log.info("Version 66 new version updated");
-        return "Version 66 new version updated";
+        log.info("Version 70 new version updated");
+        return "Version 70 new version updated";
          }
 
     @GetMapping("/subtract")
